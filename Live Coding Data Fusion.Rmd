@@ -20,7 +20,9 @@ Let's start by pulling in a list of sites that have AmeriFlux towers and PhenoCa
 phenos=get_phenos()
 #and let's check the column names:
 colnames(phenos)
+
 ```
+
 Notice that 'flux_data' (true-false), 'flux_networks', and 'flux_sitenames' are all variables that you can either filter by or retain the info of.  Let's grab all Ameriflux sites where we have the sitename stored:
 ```{r}
 phenos=phenos%>%
@@ -30,24 +32,31 @@ filter(flux_networks_name=='AMERIFLUX')%>%
   select(flux_sitenames, site, date_first, date_last, site_description, primary_veg_type)
 head(phenos)
 ```
-
+#external data from phenocamapi package
 Now let's select two combination phenocam-flux tower sites from *different* plant functional types to explore (e.g. one grassland site and one evergreen needleleaf site)
 
 ```{r}
 #example
 GrassSites=phenos%>%
   filter(phenos$primary_veg_type=='GR')
-head(GrassSites)
+head(GrassSites) #just viewing the top 6 sites in the dataframe
+
+EvergreenSites=phenos%>%
+  filter(phenos$primary_veg_type=='EN')
+head(EvergreenSites)
 ```
 
 ```{r}
-FirstSite=GrassSites[5, ] #I randomly chose the fifth site in the table
+FirstSite=GrassSites[5, ] #I randomly chose a site in the table
 FirstSite
+
+SecondSite=EvergreenSites[29,]
+SecondSite
 ```
 
 Chose your own sites and build out your code chunk here:
 ```{r}
-print('build here')
+ #edit so that ameriflux folks can access their site
 ```
 
 [Koen Huffkens](https://khufkens.com/) developed the [phenocamr package](https://cran.r-project.org/web/packages/phenocamr/index.html), which streamlines access to quality controlled data.  We will now use this package to download and process site based data according to a standardized methodology.
@@ -62,7 +71,7 @@ library(phenocamr)
 ```
 
 
-Use the dataframe of sites that you want to analyze to feed the phenocamr package.
+Use the dataframe you built to feed the phenocamr package.
 Note: you can choose either a daily or 3 day product
 
 ```{r}
@@ -71,6 +80,15 @@ phenocamr::download_phenocam(
   veg_type = FirstSite$primary_veg_type,
   roi_id = 1000,
   site = FirstSite$site,
+  phenophase = TRUE,
+  out_dir = "."
+  )
+
+phenocamr::download_phenocam(
+  frequency = 3,
+  veg_type = SecondSite$primary_veg_type,
+  roi_id = 1000,
+  site = SecondSite$site,
   phenophase = TRUE,
   out_dir = "."
   )
@@ -148,21 +166,20 @@ p = plot_ly() %>%
 p
 ```
 
-Now we can se the transition date for each year of interest and the annual patterns of the Gcc.
+Now we can see the transition date for each year of interest and the annual patterns of greenness.
 
 However, if you want more control over the parameters used during processing, you can run through the three default processing steps as implemented in download_phenocam() and set parameters manually.
 
 Of particular interest is the option to specify your own threshold used in determining transition dates. 
 
-Now, in your small groups:
 What would be a reasonable threshold for peak greenness?  Or autumn onset?  Look at the ts dataset and phenocamr package and come up with a threshold.  Use the same code to plot it here:
 
 ```{r}
-print('code here')
+#print('code here')
 #some hint code
 #what does 'rising' versus 'falling' denote?
 #what threshold should you choose?
-#td <- phenophases("butte_GR_1000_3day.csv",
+#td <- phenophases("konza_GR_1000_3day.csv",
 #            internal = TRUE,
 #            upper_thresh = 0.8)
 fall <- td[td$direction == "falling" & td$gcc_value == "gcc_90",]
@@ -310,36 +327,45 @@ gcc_p = gcc_plot(df, spring, fall)
 gcc_p
 ```
 
-What is the difference in 25% greenness onset for your first site? #hint, look at the spring dataframe you just generated
+Now let's look at inter-annual variation in spring onset.  What is the difference in 25% greenness onset for your first site? #hint, look at the spring dataframe you just generated
 
 ```{r}
 #some hints to get you started
-d=spring$transition_25
-d=as.Date(d)
-d
+yr=spring$transition_25
+yr=as.Date(yr)
+yr
 ```
 
 ```{r}
-#more code hints
-dates_split <- data.frame(date = d,
-                 year = as.numeric(format(d, format = "%Y")),
-                 month = as.numeric(format(d, format = "%m")),
-                 day = as.numeric(format(d, format = "%d")))
-```
+#pull out spring transition dates into separate columns
+dates_split <- data.frame(date = yr,
+                 year = as.numeric(format(yr, format = "%Y")),
+                 month = as.numeric(format(yr, format = "%m")),
+                 day = as.numeric(format(yr, format = "%d")))
 
+#or track DOY changes
+doy=as.Date(yr, format='%d%m%Y')
+doy=lubridate::yday(doy)
+doy
+doy=as.data.frame(doy)
+spring_variation=cbind(yr, doy)
+```
+```{r}
+ p = plot_ly(
+    data = spring_variation,
+    x = ~ yr,
+    y = ~ doy,
+    showlegend = FALSE,
+    type = 'scatter',
+    mode = 'markers', 
+    name = "Year"
+  ) 
+p
+```
 ***
-
-Generate a plot of smoothed gcc and transition dates for your two sites and subplot them.  What do you notice?
-
-```{r}
-#some hint code for subplotting in plot_ly:
-#p <- subplot(p1, p2, nrows=2)
-#p
-```
-
 ###Comparing phenology of the same vegetation cover but across climate space
 
-As Dr. Richardson mentioned this morning in his introduction lecture, the same plant functional types (e.g. grasslands) can have very different phenologogical cycles.  Let's pick two phenocam grassland sites: one from a tropical climate (kamuela), and one from an arid climate (konza) here in Arizona:
+As Dr. Richardson mentioned this morning in his introduction lecture, the same plant functional types (e.g. grasslands) can have very different phenologogical cycles.  Let's pick two phenocam grassland sites: one from a tropical climate (kamuela), and one from an arid climate #edit
 
 ```{r}
 GrassSites=GrassSites[c(27,32),]
@@ -348,7 +374,7 @@ GrassSites=GrassSites[c(27,32),]
 Now use the code you've generated above to pull in data from those sites:
 
 ```{r}
-print('code here')
+#code here
 ```
 
 Now let's create a subplot of your grasslands to compare phenology, some hint code below:
@@ -362,4 +388,85 @@ Now let's create a subplot of your grasslands to compare phenology, some hint co
 Once you have a subplot of grassland phenology across 2 climates answer the following questions here in the markdown:
 1. What seasonal patterns do you see?
 2. Do you think you set your thresholds correctly for transition dates/phenophases?  How might that very as a function of climate?
-3. What are the challenges of forecasting or modeling tropical versus arid grasslands?  How could the material that you've learned in this course so far aid you?
+
+
+
+
+***
+##Flux Data Integration
+
+Finally, let's use Bijan's package to pull in AmeriFlux data:
+```{r}
+fluxfile <- system.file('fluxnetrepo/FLX_US-Me2/FLX_US-Me2_FULLSET_DD.csv', package = 'phenocamapi')
+
+fluxts <- read.csv(fluxfile, skip = 0)
+fluxts[fluxts==-9999] <- NA
+fluxts <- as.data.table(fluxts)
+fluxts[,datetime:=as.POSIXct(as.character(TIMESTAMP), format='%Y%m%d')]
+fluxts[,YYYYMMDD:=as.character(as.Date(datetime))]
+fluxts[,YEAR:=year(datetime)]
+fluxts[,DOY:=yday(datetime)]
+
+head(fluxts[, .(TIMESTAMP, TA_F)])
+```
+
+Let's read in the phenocam data for that fluxtower and plot it:
+```{r}
+# load the time series data but replace the csv filename with whatever you downloaded
+df <- read.table("oregonMP_EN_1000_3day.csv", header = TRUE, sep = ",")
+
+# read in the transition date file
+td <- read.table("oregonMP_EN_1000_3day_transition_dates.csv",
+                 header = TRUE,
+                 sep = ",")
+spring <- td[td$direction == "rising" & td$gcc_value == "gcc_90",]
+fall <- td[td$direction == "falling" & td$gcc_value == "gcc_90",]
+gcc_p = gcc_plot(df, spring, fall)
+gcc_p
+```
+Now let's look at the flux data:
+```{r}
+p = plot_ly(
+    data = fluxts,
+    x = ~ datetime,
+    y = ~ GPP_DT_CUT_MEAN,
+    showlegend = FALSE,
+    type = 'scatter',
+    mode = 'markers'
+  ) 
+p
+```
+
+We'll need to filter the phenocam data to match up with the fluxtower subset:
+```{r}
+sum(is.element(df$date, as.factor(fluxts$datetime)))
+sum(is.element(df$date, as.factor(fluxts$datetime)))
+```
+Unfortunately our flux tower data is too short to see much of an overlap, but here's where your data could come in!  Below I've dropped some code to subplot fluxtower and phenocam data, if you have time during this workshop feel free to drag your data and code from above to complete a GPP/GCC comparison.
+
+```{r}
+#some hint code for subplotting in plot_ly:
+p1 = plot_ly(
+    data = df,
+    x = ~ date,
+    y = ~ gcc_90,
+    showlegend = FALSE,
+    type = 'scatter',
+    mode = 'markers'
+  ) %>%
+    add_trace(
+      y = ~ smooth_gcc_90,
+      mode = "lines",
+      line = list(width = 2, color = "rgb(120,120,120)"),
+      name = "Gcc loess fit",
+      showlegend = TRUE
+    )
+p1
+```
+
+```{r}
+#some hint code for subplotting in plot_ly:
+#p <- subplot(p1, p2, nrows=2)
+#p
+```
+
