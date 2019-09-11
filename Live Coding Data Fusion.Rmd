@@ -29,7 +29,7 @@ phenos=phenos%>%
   filter(phenos$flux_data=='TRUE')%>%
 filter(flux_networks_name=='AMERIFLUX')%>%
   filter(flux_sitenames!='NA')%>%
-  select(flux_sitenames, site, date_first, date_last, site_description, primary_veg_type)
+  select(flux_sitenames, site, date_first, date_last, site_description, primary_veg_type, koeppen_geiger)
 head(phenos)
 ```
 #external data from phenocamapi package
@@ -47,16 +47,17 @@ head(EvergreenSites)
 ```
 
 ```{r}
-FirstSite=GrassSites[5, ] #I randomly chose a site in the table
-FirstSite
+FirstGRSite=GrassSites[5, ] #I randomly chose a site in the table
+FirstGRSite
 
-SecondSite=EvergreenSites[29,]
-SecondSite
+SecondENSite=EvergreenSites[29,]
+SecondENSite
 ```
 
 Chose your own sites and build out your code chunk here:
 ```{r}
- #edit so that ameriflux folks can access their site
+ #Copy and past the code above to select sites that you are interested in
+#Drop your code here
 ```
 
 [Koen Huffkens](https://khufkens.com/) developed the [phenocamr package](https://cran.r-project.org/web/packages/phenocamr/index.html), which streamlines access to quality controlled data.  We will now use this package to download and process site based data according to a standardized methodology.
@@ -77,18 +78,18 @@ Note: you can choose either a daily or 3 day product
 ```{r}
 phenocamr::download_phenocam(
   frequency = 3,
-  veg_type = FirstSite$primary_veg_type,
+  veg_type = FirstGRSite$primary_veg_type,
   roi_id = 1000,
-  site = FirstSite$site,
+  site = FirstGRSite$site,
   phenophase = TRUE,
   out_dir = "."
   )
 
 phenocamr::download_phenocam(
   frequency = 3,
-  veg_type = SecondSite$primary_veg_type,
+  veg_type = SecondENSite$primary_veg_type,
   roi_id = 1000,
-  site = SecondSite$site,
+  site = SecondENSite$site,
   phenophase = TRUE,
   out_dir = "."
   )
@@ -186,7 +187,7 @@ fall <- td[td$direction == "falling" & td$gcc_value == "gcc_90",]
 #Now generate a fall dataframe, what metrics should you use?
 ```
 
-###Comparing phenology across vegetation types
+
 
 Let's load in a function to make plotting smoother.  I'm dropped it here in the markdown so that you can edit it and re-run it as you see fit:
 ```{r}
@@ -323,8 +324,8 @@ gcc_plot = function(gcc, spring, fall){
 
 ```{r}
 
-gcc_p = gcc_plot(df, spring, fall)
-gcc_p
+gr1 = gcc_plot(df, spring, fall)
+gr1
 ```
 
 Now let's look at inter-annual variation in spring onset.  What is the difference in 25% greenness onset for your first site? #hint, look at the spring dataframe you just generated
@@ -359,30 +360,56 @@ spring_variation=cbind(yr, doy)
     type = 'scatter',
     mode = 'markers', 
     name = "Year"
-  ) 
+  ) %>%
+    # 25 %
+    add_trace(
+      x = ~ yr,
+      mode = "lines",
+      line = list(width = 2, color = "rgb(120,120,120)"),
+      showlegend = FALSE
+      
+    )
 p
 ```
 ***
 ###Comparing phenology of the same vegetation cover but across climate space
 
-As Dr. Richardson mentioned this morning in his introduction lecture, the same plant functional types (e.g. grasslands) can have very different phenologogical cycles.  Let's pick two phenocam grassland sites: one from a tropical climate (kamuela), and one from an arid climate #edit
+As Dr. Richardson mentioned this morning in his introduction lecture, the same plant functional types (e.g. grasslands) can have very different phenological cycles.  Let's pick two phenocam grassland sites: one from a tropical climate (kamuela), and one from an arid climate #edit
 
 ```{r}
-GrassSites=GrassSites[c(27,32),]
+SecondGRSite=GrassSites[4,]
+phenocamr::download_phenocam(
+  frequency = 3,
+  veg_type = SecondGRSite$primary_veg_type,
+  roi_id = 1000,
+  site = SecondGRSite$site,
+  phenophase = TRUE,
+  out_dir = "."
+  )
 ```
 
 Now use the code you've generated above to pull in data from those sites:
 
 ```{r}
 #code here
+# load the time series data but replace the csv filename with whatever you downloaded
+df <- read.table("kendall_GR_1000_3day.csv", header = TRUE, sep = ",")
+
+# read in the transition date file
+td <- read.table("kendall_GR_1000_3day_transition_dates.csv",
+                 header = TRUE,
+                 sep = ",")
+spring <- td[td$direction == "rising" & td$gcc_value == "gcc_90",]
+gr2 = gcc_plot(df, spring, fall)
+gr2
 ```
 
 Now let's create a subplot of your grasslands to compare phenology, some hint code below:
 
 ```{r}
 #some hint code for subplotting in plot_ly:
-#p <- subplot(p1, p2, nrows=2)
-#p
+p <- subplot(gr1, gr2, nrows=2)
+p
 ```
 
 Once you have a subplot of grassland phenology across 2 climates answer the following questions here in the markdown:
@@ -470,3 +497,4 @@ p1
 #p
 ```
 
+You’ve now been introduced to the basics of working with the PhenoCam API, using the PhenoR package, and integrating PhenoCam and AmeriFlux data. Good luck conducting your own analyses!

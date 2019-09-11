@@ -96,7 +96,8 @@ install.packages(c(
   'dplyr',
   'phenocamr', 
   'phenocamapi', 
-  'rmarkdown'
+  'rmarkdown',
+  'lubridate'
 ))
 
 ```
@@ -106,7 +107,9 @@ install.packages(c(
 You're good to go!
 
 Let's go ahead and launch our RMarkdown Notebook for tomorrow:
+[Click this link to direct you to the GitHub repo for our workshop.](https://github.com/katharynduffy/Flux-Phenology-Fusion)
 
+1.  Click on the 'clone or download button' and download the repo as a zip (or if you're a regular github user just git clone)
 
 In your Console paste the following code:
 ```
