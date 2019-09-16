@@ -14,7 +14,7 @@ library(phenocamr)
 library(dplyr)
 ```
 
-Let's start by pulling in a list of sites that have AmeriFlux towers and PhenoCams via the phenocamapi package:
+Let's start by pulling in a list of sites that have AmeriFlux towers and PhenoCams via the [phenocamapi R package](https://cran.r-project.org/package=phenocamapi):
 
 ```{r}
 phenos=get_phenos()
@@ -22,6 +22,7 @@ phenos=get_phenos()
 colnames(phenos)
 
 ```
+You can more about the phenocamapi R package from [here](https://bnasr.github.io/phenocamapi/).
 
 Notice that 'flux_data' (true-false), 'flux_networks', and 'flux_sitenames' are all variables that you can either filter by or retain the info of.  Let's grab all Ameriflux sites where we have the sitename stored:
 ```{r}
@@ -50,7 +51,7 @@ head(DecidSites)
 FirstGRSite=GrassSites[5, ] #I randomly chose a site in the table
 FirstGRSite
 
-SecondDBSite=DecidSites[2,]
+SecondDBSite=DecidSites[3,]
 SecondDBSite
 ```
 
@@ -80,18 +81,18 @@ phenocamr::download_phenocam(
   frequency = 3,
   veg_type = FirstGRSite$primary_veg_type,
   roi_id = 1000,
-  site = FirstGRSite$site,
+  site = paste0(FirstGRSite$site, '$'),
   phenophase = TRUE,
-  out_dir = "."
+  out_dir = "data"
   )
 
 phenocamr::download_phenocam(
   frequency = 3,
   veg_type = SecondDBSite$primary_veg_type,
   roi_id = 1000,
-  site = SecondDBSite$site,
+  site = paste0(SecondDBSite$site, '$'),
   phenophase = TRUE,
-  out_dir = "."
+  out_dir = "data"
   )
 ```
 
@@ -99,10 +100,10 @@ Now look in your working directory.  You have data!  Read it in:
 
 ```{r}
 # load the time series data but replace the csv filename with whatever you downloaded
-df <- read.table("konza_GR_1000_3day.csv", header = TRUE, sep = ",")
+df <- read.table("data/konza_GR_1000_3day.csv", header = TRUE, sep = ",")
 
 # read in the transition date file
-td <- read.table("konza_GR_1000_3day_transition_dates.csv",
+td <- read.table("data/konza_GR_1000_3day_transition_dates.csv",
                  header = TRUE,
                  sep = ",")
 ```
@@ -382,9 +383,9 @@ phenocamr::download_phenocam(
   frequency = 3,
   veg_type = SecondGRSite$primary_veg_type,
   roi_id = 1000,
-  site = SecondGRSite$site,
+  site = paste0(SecondGRSite$site, '$'),
   phenophase = TRUE,
-  out_dir = "."
+  out_dir = "data"
   )
 ```
 
@@ -393,10 +394,10 @@ Now use the code you've generated above to pull in data from those sites:
 ```{r}
 #code here
 # load the time series data but replace the csv filename with whatever you downloaded
-df <- read.table("kendall_GR_1000_3day.csv", header = TRUE, sep = ",")
+df <- read.table("data/kendall_GR_1000_3day.csv", header = TRUE, sep = ",")
 
 # read in the transition date file
-td <- read.table("kendall_GR_1000_3day_transition_dates.csv",
+td <- read.table("data/kendall_GR_1000_3day_transition_dates.csv",
                  header = TRUE,
                  sep = ",")
 spring <- td[td$direction == "rising" & td$gcc_value == "gcc_90",]
@@ -425,7 +426,7 @@ Once you have a subplot of grassland phenology across 2 climates answer the foll
 
 Finally, let's pull in some cleaned AmeriFlux data:
 ```{r}
-fluxts <- read_csv("Bartlett_daily_gf_reformat.csv")
+fluxts <- read.csv("data/example_flux/Bartlett_daily_gf_reformat.csv")
 head(fluxts)
 ```
 
@@ -433,10 +434,10 @@ head(fluxts)
 Let's read in the phenocam data for that fluxtower and plot it:
 ```{r}
 # load the time series data but replace the csv filename with whatever you downloaded
-df <- read.table("bartlettir_DB_1000_3day.csv", header = TRUE, sep = ",")
+df <- read.table("data/bartlettir_DB_1000_3day.csv", header = TRUE, sep = ",")
 
 # read in the transition date file
-td <- read.table("bartlettir_DB_1000_3day_transition_dates.csv",
+td <- read.table("data/bartlettir_DB_1000_3day_transition_dates.csv",
                  header = TRUE,
                  sep = ",")
 spring <- td[td$direction == "rising" & td$gcc_value == "gcc_90",]
