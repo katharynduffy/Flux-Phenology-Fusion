@@ -41,17 +41,17 @@ GrassSites=phenos%>%
   filter(phenos$primary_veg_type=='GR')
 head(GrassSites) #just viewing the top 6 sites in the dataframe
 
-EvergreenSites=phenos%>%
-  filter(phenos$primary_veg_type=='EN')
-head(EvergreenSites)
+DecidSites=phenos%>%
+  filter(phenos$primary_veg_type=='DB')
+head(DecidSites)
 ```
 
 ```{r}
 FirstGRSite=GrassSites[5, ] #I randomly chose a site in the table
 FirstGRSite
 
-SecondENSite=EvergreenSites[29,]
-SecondENSite
+SecondDBSite=DecidSites[2,]
+SecondDBSite
 ```
 
 Chose your own sites and build out your code chunk here:
@@ -87,9 +87,9 @@ phenocamr::download_phenocam(
 
 phenocamr::download_phenocam(
   frequency = 3,
-  veg_type = SecondENSite$primary_veg_type,
+  veg_type = SecondDBSite$primary_veg_type,
   roi_id = 1000,
-  site = SecondENSite$site,
+  site = SecondDBSite$site,
   phenophase = TRUE,
   out_dir = "."
   )
@@ -400,6 +400,7 @@ td <- read.table("kendall_GR_1000_3day_transition_dates.csv",
                  header = TRUE,
                  sep = ",")
 spring <- td[td$direction == "rising" & td$gcc_value == "gcc_90",]
+fall <- td[td$direction == "falling" & td$gcc_value == "gcc_90",]
 gr2 = gcc_plot(df, spring, fall)
 gr2
 ```
@@ -422,28 +423,20 @@ Once you have a subplot of grassland phenology across 2 climates answer the foll
 ***
 ##Flux Data Integration
 
-Finally, let's use Bijan's package to pull in AmeriFlux data:
+Finally, let's pull in some cleaned AmeriFlux data:
 ```{r}
-fluxfile <- system.file('fluxnetrepo/FLX_US-Me2/FLX_US-Me2_FULLSET_DD.csv', package = 'phenocamapi')
-
-fluxts <- read.csv(fluxfile, skip = 0)
-fluxts[fluxts==-9999] <- NA
-fluxts <- as.data.table(fluxts)
-fluxts[,datetime:=as.POSIXct(as.character(TIMESTAMP), format='%Y%m%d')]
-fluxts[,YYYYMMDD:=as.character(as.Date(datetime))]
-fluxts[,YEAR:=year(datetime)]
-fluxts[,DOY:=yday(datetime)]
-
-head(fluxts[, .(TIMESTAMP, TA_F)])
+fluxts <- read_csv("Bartlett_daily_gf_reformat.csv")
+head(fluxts)
 ```
+
 
 Let's read in the phenocam data for that fluxtower and plot it:
 ```{r}
 # load the time series data but replace the csv filename with whatever you downloaded
-df <- read.table("oregonMP_EN_1000_3day.csv", header = TRUE, sep = ",")
+df <- read.table("bartlettir_DB_1000_3day.csv", header = TRUE, sep = ",")
 
 # read in the transition date file
-td <- read.table("oregonMP_EN_1000_3day_transition_dates.csv",
+td <- read.table("bartlettir_DB_1000_3day_transition_dates.csv",
                  header = TRUE,
                  sep = ",")
 spring <- td[td$direction == "rising" & td$gcc_value == "gcc_90",]
@@ -455,8 +448,8 @@ Now let's look at the flux data:
 ```{r}
 p = plot_ly(
     data = fluxts,
-    x = ~ datetime,
-    y = ~ GPP_DT_CUT_MEAN,
+    x = ~ date,
+    y = ~ GPP_U50,
     showlegend = FALSE,
     type = 'scatter',
     mode = 'markers'
@@ -466,13 +459,17 @@ p
 
 We'll need to filter the phenocam data to match up with the fluxtower subset:
 ```{r}
-sum(is.element(df$date, as.factor(fluxts$datetime)))
-sum(is.element(df$date, as.factor(fluxts$datetime)))
+sum(is.element(df$date, as.factor(fluxts$date)))
 ```
-Unfortunately our flux tower data is too short to see much of an overlap, but here's where your data could come in!  Below I've dropped some code to subplot fluxtower and phenocam data, if you have time during this workshop feel free to drag your data and code from above to complete a GPP/GCC comparison.
+Now on your own use this indexing code above to filter the phenocam data to overlap with the fluxtower data
 
 ```{r}
-#some hint code for subplotting in plot_ly:
+df=df[is.element(df$date, as.factor(fluxts$date)), ]
+fluxts=fluxts[is.element(as.factor(fluxts$date),df$date), ]
+```
+
+```{r}
+
 p1 = plot_ly(
     data = df,
     x = ~ date,
@@ -493,8 +490,8 @@ p1
 
 ```{r}
 #some hint code for subplotting in plot_ly:
-#p <- subplot(p1, p2, nrows=2)
-#p
+p <- subplot(p, p1, nrows=2)
+p
 ```
 
 You’ve now been introduced to the basics of working with the PhenoCam API, using the PhenoR package, and integrating PhenoCam and AmeriFlux data. Good luck conducting your own analyses!
